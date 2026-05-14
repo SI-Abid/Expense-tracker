@@ -12,6 +12,7 @@ import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.doubleOrNull
+import kotlinx.serialization.json.contentOrNull
 
 data class AgentReply(val reply: String, val actions: List<AgentAction>)
 

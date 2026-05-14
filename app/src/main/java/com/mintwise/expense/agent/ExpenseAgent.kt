@@ -40,14 +40,12 @@ class ExpenseAgent(
         val today = ExpenseRepository.today()
         val summary = repo.monthSummary()
         val budgets = repo.budgetsFor()
-        val ctx = "Today is $today. Month: ${summary.month}. " +
-            "Income MTD: ${"%.2f".format(summary.income)}. " +
-            "Expense MTD: ${"%.2f".format(summary.expense)}. " +
-            "Net: ${"%.2f".format(summary.net)}. " +
-            "Budgets set: ${budgets.size}."
+        // Compact context — every char is input tokens.
+        val ctx = "Today $today. MTD income/expense ${"%.0f".format(summary.income)}/" +
+            "${"%.0f".format(summary.expense)}. Budgets ${budgets.size}."
 
         val messages = mutableListOf<JsonObject>(
-            userMessage("[Context: $ctx]\n\nUser says: $userInput")
+            userMessage("[$ctx]\n\n$userInput")
         )
         val actions = mutableListOf<AgentAction>()
 
@@ -55,7 +53,7 @@ class ExpenseAgent(
             val response = client.messages(
                 token = token,
                 model = model,
-                maxTokens = 1024,
+                maxTokens = 512,
                 system = SYSTEM_PROMPT,
                 tools = TOOLS,
                 messages = JsonArray(messages),
@@ -246,37 +244,23 @@ class ExpenseAgent(
     }
 
     companion object {
-        private const val MAX_TURNS = 6
+        // Cap the agent loop. Typical flow finishes in 2 turns (call tool → narrate
+        // result). 3 covers compound inputs without enabling runaway loops.
+        private const val MAX_TURNS = 3
 
+        // Kept terse on purpose — every char is billed input tokens that recur on
+        // every turn of the loop. Personality lives in 'Be brief.' + 'No emojis.'
         private val SYSTEM_PROMPT = """
-            You are Agentic — the user's personal financial agent. You analyze,
-            plan, and help them save smartly. You take free-form natural-language
-            input and call the right tools to record or retrieve data, then write
-            a SHORT (1-3 sentences) helpful reply.
-
-            Tone: warm, observant, concise. Friendly but professional. Mention
-            concrete numbers when relevant ("you've spent ₹1,500 on Food this
-            month"). Avoid emojis. Avoid empty praise ("Great job!").
-
-            Tools you can call:
-            - record_transaction: log an expense or income
-            - set_budget: monthly cap per category
-            - list_transactions / get_summary: read recent activity
-            - set_goal / add_goal_progress / list_goals: savings goals
-            - add_bill / list_bills: upcoming bills
+            You are Agentic, a financial assistant. Call tools to record or read
+            data, then reply in ONE sentence.
 
             Rules:
-            - ALWAYS call tools to record transactions, budgets, goals, or bills —
-              never just say "got it" without recording.
-            - Infer category from description (Food, Transport, Entertainment,
-              Bills, Shopping, Utilities, Health, Travel, Subscriptions, Income,
-              Misc).
-            - For compound inputs ("$5 coffee and $12 lunch"), call
-              record_transaction twice. One transaction per call.
-            - For questions ("how much on dining?"), call get_summary or
-              list_transactions first, then answer with the actual number.
-            - Today's date is in the user message context — use it for due dates
-              and "today" references.
+            - ALWAYS call a tool — never just acknowledge.
+            - One tool call per transaction; compound input means multiple calls.
+            - Categories: Food, Transport, Entertainment, Bills, Shopping,
+              Utilities, Health, Travel, Subscriptions, Income, Misc.
+            - For questions, call get_summary or list_transactions first.
+            - No emojis. No praise. Be brief.
         """.trimIndent()
 
         private val TOOLS: JsonArray = buildJsonArray {

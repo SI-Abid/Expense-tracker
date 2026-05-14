@@ -1,15 +1,24 @@
-__pycache__/
-*.py[cod]
-*.db
-*.sqlite
-*.sqlite3
-.env
-venv/
-.venv/
-env/
+# Android / Gradle
+*.iml
+.gradle/
+local.properties
 .idea/
-.vscode/
-*.egg-info/
-dist/
-build/
 .DS_Store
+build/
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aab
+*.keystore
+*.jks
+
+# Secrets
+.env
+*.env.local
+
+# Kotlin / JVM
+*.class
+
+# OS
+Thumbs.db

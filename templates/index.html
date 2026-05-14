@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% block content %}
+
+<section class="oracle">
+  <div class="oracle-head">
+    <h2>Speak to the Oracle</h2>
+    <p>
+      Tell MINTwise anything — "spent 12 on lunch", "set my food budget to 400",
+      "I got paid 2500", "how much have I burned on coffee?" The Oracle will
+      reason, call tools, record, and reply.
+    </p>
+    {% if not has_api_key %}
+      <p class="warn">No Claude token set — drop a CLAUDE_CODE_OAUTH_TOKEN (or ANTHROPIC_API_KEY) in your .env to wake it.</p>
+    {% endif %}
+  </div>
+  <form method="post" action="{{ url_for('ask') }}" class="oracle-form" id="oracle-form">
+    <input
+      type="text"
+      name="message"
+      id="oracle-input"
+      placeholder="e.g. blew 38 bucks on sushi and 4 on a metro card"
+      autocomplete="off"
+      required
+    />
+    <button type="submit">Consult</button>
+  </form>
+  <div id="oracle-output" class="oracle-output"></div>
+</section>
+
+<section class="grid">
+  <article class="card card-wide">
+    <h3>{{ month }} at a glance</h3>
+    <div class="stats">
+      <div class="stat">
+        <span class="stat-label">Income</span>
+        <span class="stat-value income">{{ "%.2f"|format(summary.income) }}</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Spent</span>
+        <span class="stat-value expense">{{ "%.2f"|format(summary.expense) }}</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Net</span>
+        <span class="stat-value {% if summary.net < 0 %}expense{% else %}income{% endif %}">
+          {{ "%.2f"|format(summary.net) }}
+        </span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Budgeted</span>
+        <span class="stat-value">{{ "%.2f"|format(summary.budgeted) }}</span>
+      </div>
+    </div>
+  </article>
+
+  <article class="card">
+    <h3>Funds</h3>
+    {% if funds %}
+      <ul class="fund-list">
+        {% for f in funds %}
+          <li>
+            <span class="fund-name">{{ f.name }}</span>
+            <span class="fund-balance {% if f.balance < 0 %}expense{% endif %}">
+              {{ "%.2f"|format(f.balance) }}
+            </span>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="muted">No funds tracked yet.</p>
+    {% endif %}
+  </article>
+
+  <article class="card card-wide">
+    <h3>Budget vs Actual</h3>
+    {% if budget_rows %}
+      <ul class="budget-list">
+        {% for b in budget_rows %}
+          <li>
+            <div class="budget-line">
+              <span class="budget-category">{{ b.category }}</span>
+              <span class="budget-numbers">
+                <strong>{{ "%.2f"|format(b.actual) }}</strong> / {{ "%.2f"|format(b.amount) }}
+              </span>
+            </div>
+            <div class="bar">
+              <div class="bar-fill {% if b.over %}bar-over{% endif %}"
+                   style="width: {{ b.pct if b.pct < 100 else 100 }}%"></div>
+            </div>
+            {% if b.note %}<small class="muted">{{ b.note }}</small>{% endif %}
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="muted">No budgets yet. Tell the Oracle: "set food budget to 400".</p>
+    {% endif %}
+
+    {% if uncategorized %}
+      <details class="uncategorized">
+        <summary>Spending outside any budget</summary>
+        <ul>
+          {% for cat, total in uncategorized.items() %}
+            <li><span>{{ cat }}</span><span>{{ "%.2f"|format(total) }}</span></li>
+          {% endfor %}
+        </ul>
+      </details>
+    {% endif %}
+  </article>
+
+  <article class="card">
+    <h3>Recent Oracle whispers</h3>
+    {% if log %}
+      <ul class="log-list">
+        {% for entry in log %}
+          <li>
+            <div class="log-user">&rsaquo; {{ entry.user_input }}</div>
+            <div class="log-reply">{{ entry.agent_reply }}</div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="muted">No conversations yet.</p>
+    {% endif %}
+  </article>
+
+  <article class="card card-wide">
+    <h3>Latest transactions</h3>
+    {% if transactions %}
+      <table class="tx-table">
+        <thead>
+          <tr><th>Date</th><th>Kind</th><th>Category</th><th>Description</th><th class="right">Amount</th></tr>
+        </thead>
+        <tbody>
+          {% for tx in transactions %}
+            <tr>
+              <td>{{ tx.occurred_on }}</td>
+              <td><span class="tag tag-{{ tx.kind }}">{{ tx.kind }}</span></td>
+              <td>{{ tx.category }}</td>
+              <td>{{ tx.description }}</td>
+              <td class="right {{ 'income' if tx.kind == 'income' else 'expense' }}">
+                {{ "%.2f"|format(tx.amount) }}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <a class="more-link" href="{{ url_for('transactions') }}">See full ledger &rarr;</a>
+    {% else %}
+      <p class="muted">The ledger is empty. The Oracle awaits its first whisper.</p>
+    {% endif %}
+  </article>
+</section>
+
+{% endblock %}

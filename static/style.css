@@ -1,0 +1,370 @@
+:root {
+  --bg: #0f0e17;
+  --bg-card: #1b1928;
+  --bg-soft: #232132;
+  --text: #f8efe2;
+  --text-dim: #9c95a8;
+  --accent: #d2a05c;
+  --accent-warm: #e87a5a;
+  --income: #79c682;
+  --expense: #e87a5a;
+  --line: #2c2941;
+  --serif: "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  --sans: "Inter", "Helvetica Neue", system-ui, sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  line-height: 1.55;
+  min-height: 100vh;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.2rem 2rem;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(232, 122, 90, 0.06), transparent);
+}
+
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+  color: var(--text);
+  text-decoration: none;
+}
+.brand-glyph {
+  font-size: 1.8rem;
+  color: var(--accent);
+  line-height: 1;
+}
+.brand-name {
+  font-family: var(--serif);
+  font-size: 1.6rem;
+  font-style: italic;
+  letter-spacing: 0.02em;
+}
+.brand-sub {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  font-style: italic;
+}
+
+nav a {
+  color: var(--text-dim);
+  margin-left: 1.4rem;
+  text-decoration: none;
+  font-size: 0.95rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+nav a:hover { color: var(--accent); }
+
+.page {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem 1.5rem 4rem;
+}
+
+.footer {
+  text-align: center;
+  padding: 1.5rem;
+  color: var(--text-dim);
+  font-style: italic;
+  font-family: var(--serif);
+  border-top: 1px solid var(--line);
+}
+
+/* Oracle box */
+.oracle {
+  background: linear-gradient(135deg, #1d1b2c 0%, #251f33 100%);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 1.8rem;
+  margin-bottom: 2rem;
+  position: relative;
+  overflow: hidden;
+}
+.oracle::before {
+  content: "";
+  position: absolute;
+  top: -40px; right: -40px;
+  width: 180px; height: 180px;
+  background: radial-gradient(circle, rgba(210, 160, 92, 0.18), transparent 60%);
+  pointer-events: none;
+}
+.oracle-head h2 {
+  font-family: var(--serif);
+  font-style: italic;
+  margin: 0 0 0.4rem;
+  font-size: 1.6rem;
+  color: var(--accent);
+}
+.oracle-head p {
+  margin: 0 0 1rem;
+  color: var(--text-dim);
+}
+.oracle-form {
+  display: flex;
+  gap: 0.6rem;
+  margin-bottom: 0.8rem;
+}
+.oracle-form input {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  background: var(--bg-soft);
+  border: 1px solid var(--line);
+  color: var(--text);
+  border-radius: 8px;
+  font-size: 1rem;
+  font-family: var(--sans);
+}
+.oracle-form input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(210, 160, 92, 0.2);
+}
+.oracle-form button {
+  padding: 0.75rem 1.4rem;
+  background: var(--accent);
+  color: var(--bg);
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  letter-spacing: 0.02em;
+}
+.oracle-form button:hover { background: var(--accent-warm); }
+.oracle-form button:disabled { opacity: 0.5; cursor: wait; }
+
+.oracle-output {
+  margin-top: 0.4rem;
+  min-height: 0;
+}
+.oracle-output:not(:empty) {
+  background: var(--bg-soft);
+  border-left: 3px solid var(--accent);
+  padding: 0.9rem 1.1rem;
+  border-radius: 0 8px 8px 0;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 1.05rem;
+  line-height: 1.5;
+}
+.oracle-actions {
+  display: block;
+  margin-top: 0.6rem;
+  font-family: var(--sans);
+  font-style: normal;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+.warn {
+  background: rgba(232, 122, 90, 0.12);
+  border-left: 3px solid var(--accent-warm);
+  padding: 0.5rem 0.9rem;
+  border-radius: 0 6px 6px 0;
+  color: var(--accent-warm);
+  font-size: 0.9rem;
+}
+
+/* Cards / grid */
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.2rem;
+}
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 1.3rem;
+}
+.card h2, .card h3 {
+  margin-top: 0;
+  font-family: var(--serif);
+  font-style: italic;
+  color: var(--accent);
+}
+.card h3 { font-size: 1.15rem; margin-bottom: 0.9rem; }
+.card-wide { grid-column: 1 / -1; }
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  padding: 0.6rem 0.8rem;
+  background: var(--bg-soft);
+  border-radius: 8px;
+}
+.stat-label {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.stat-value {
+  font-family: var(--serif);
+  font-size: 1.6rem;
+}
+.income { color: var(--income); }
+.expense { color: var(--expense); }
+.muted { color: var(--text-dim); font-style: italic; }
+
+.fund-list, .budget-list, .log-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.fund-list li {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px dotted var(--line);
+}
+.fund-list li:last-child { border-bottom: none; }
+.fund-balance { font-family: var(--serif); font-size: 1.15rem; }
+
+.budget-list li { margin-bottom: 1rem; }
+.budget-line {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.3rem;
+}
+.budget-category { font-weight: 600; }
+.budget-numbers { color: var(--text-dim); font-variant-numeric: tabular-nums; }
+.bar {
+  height: 8px;
+  background: var(--bg-soft);
+  border-radius: 4px;
+  overflow: hidden;
+}
+.bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--income), var(--accent));
+  transition: width 0.4s ease;
+}
+.bar-over { background: linear-gradient(90deg, var(--accent-warm), #c4475a); }
+
+.uncategorized {
+  margin-top: 1rem;
+  font-size: 0.9rem;
+  color: var(--text-dim);
+}
+.uncategorized ul { list-style: none; padding: 0.6rem 0 0; margin: 0; }
+.uncategorized li {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.2rem 0;
+}
+
+.log-list li {
+  padding: 0.6rem 0;
+  border-bottom: 1px dotted var(--line);
+}
+.log-list li:last-child { border-bottom: none; }
+.log-user { color: var(--text-dim); font-size: 0.9rem; }
+.log-reply {
+  font-family: var(--serif);
+  font-style: italic;
+  margin-top: 0.2rem;
+}
+
+/* Tables */
+.tx-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+  font-size: 0.95rem;
+}
+.tx-table th {
+  text-align: left;
+  padding: 0.6rem 0.4rem;
+  border-bottom: 1px solid var(--line);
+  color: var(--text-dim);
+  font-weight: 500;
+  font-size: 0.8rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+.tx-table td {
+  padding: 0.6rem 0.4rem;
+  border-bottom: 1px dotted var(--line);
+}
+.tx-table tr:last-child td { border-bottom: none; }
+.tx-table .right { text-align: right; font-variant-numeric: tabular-nums; }
+
+.tag {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.tag-expense { background: rgba(232, 122, 90, 0.15); color: var(--expense); }
+.tag-income { background: rgba(121, 198, 130, 0.15); color: var(--income); }
+
+.more-link {
+  display: inline-block;
+  margin-top: 0.8rem;
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+.more-link:hover { text-decoration: underline; }
+
+/* Budget form */
+.budget-form {
+  display: grid;
+  grid-template-columns: 1.5fr 1fr 1fr 2fr auto;
+  gap: 0.6rem;
+  margin: 1rem 0 1.5rem;
+}
+.budget-form input {
+  padding: 0.6rem 0.8rem;
+  background: var(--bg-soft);
+  border: 1px solid var(--line);
+  color: var(--text);
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+.budget-form button {
+  padding: 0.6rem 1.2rem;
+  background: var(--accent);
+  color: var(--bg);
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.link-button {
+  background: none;
+  border: none;
+  color: var(--accent-warm);
+  cursor: pointer;
+  padding: 0;
+  font-size: 0.85rem;
+  text-decoration: underline;
+}
+
+@media (max-width: 700px) {
+  .grid { grid-template-columns: 1fr; }
+  .stats { grid-template-columns: repeat(2, 1fr); }
+  .budget-form { grid-template-columns: 1fr; }
+  .oracle-form { flex-direction: column; }
+  .topbar { flex-direction: column; gap: 0.6rem; align-items: flex-start; }
+}

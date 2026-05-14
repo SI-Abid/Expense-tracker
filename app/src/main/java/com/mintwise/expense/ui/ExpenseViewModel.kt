@@ -146,7 +146,7 @@ class ExpenseViewModel(
             } catch (e: Exception) {
                 _oracle.value = OracleState(
                     pending = false,
-                    lastError = e.message ?: "Agent could not be reached.",
+                    lastError = friendlyError(e.message),
                 )
             }
         }
@@ -178,6 +178,18 @@ class ExpenseViewModel(
 
     fun deleteBill(id: Long) {
         viewModelScope.launch { repo.deleteBill(id) }
+    }
+
+    private fun friendlyError(raw: String?): String {
+        val msg = raw.orEmpty()
+        return when {
+            "429" in msg -> "Hit Claude's rate limit. Wait a moment and try again."
+            "401" in msg || "403" in msg ->
+                "Claude rejected the token. Check Settings."
+            "529" in msg -> "Anthropic is overloaded. Try again in a few seconds."
+            msg.isBlank() -> "Agent could not be reached."
+            else -> msg
+        }
     }
 
     class Factory(private val app: MintwiseApp) : ViewModelProvider.Factory {

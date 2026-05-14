@@ -1,6 +1,7 @@
 package com.mintwise.expense.agent
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -50,22 +51,38 @@ class AnthropicClient(
             put("tools", tools)
             put("messages", messages)
         }
-        val request = Request.Builder()
-            .url(MESSAGES_URL)
-            .addHeader("anthropic-version", ANTHROPIC_VERSION)
-            .addHeader("content-type", "application/json")
-            .also { applyAuth(it, token) }
-            .post(json.encodeToString(JsonObject.serializer(), body).toRequestBody(JSON_MEDIA))
-            .build()
+        val bodyJson = json.encodeToString(JsonObject.serializer(), body)
 
-        httpClient.newCall(request).execute().use { resp ->
-            val responseBody = resp.body?.string().orEmpty()
-            if (!resp.isSuccessful) {
-                val message = extractErrorMessage(responseBody) ?: responseBody.take(200)
-                throw IOException("Anthropic API ${resp.code}: $message")
+        for (attempt in 0 until MAX_ATTEMPTS) {
+            val request = Request.Builder()
+                .url(MESSAGES_URL)
+                .addHeader("anthropic-version", ANTHROPIC_VERSION)
+                .addHeader("content-type", "application/json")
+                .also { applyAuth(it, token) }
+                .post(bodyJson.toRequestBody(JSON_MEDIA))
+                .build()
+
+            val (code, responseBody, retryAfterHeader) = httpClient.newCall(request).execute().use { resp ->
+                Triple(resp.code, resp.body?.string().orEmpty(), resp.header("Retry-After"))
             }
-            json.parseToJsonElement(responseBody).jsonObject
+
+            if (code in 200..299) {
+                return@withContext json.parseToJsonElement(responseBody).jsonObject
+            }
+
+            val transient = code == 429 || code in 500..599
+            val lastAttempt = attempt == MAX_ATTEMPTS - 1
+            if (transient && !lastAttempt) {
+                val retryAfterMs = retryAfterHeader?.toLongOrNull()?.times(1000L)
+                    ?: (1000L * (1 shl attempt))  // 1s, 2s, 4s...
+                delay(retryAfterMs)
+                continue
+            }
+
+            val msg = extractErrorMessage(responseBody) ?: responseBody.take(200)
+            throw IOException("Anthropic API $code: $msg")
         }
+        throw IOException("Anthropic API: exhausted $MAX_ATTEMPTS attempts")
     }
 
     private fun applyAuth(builder: Request.Builder, token: String) {
@@ -87,6 +104,9 @@ class AnthropicClient(
         const val MESSAGES_URL = "https://api.anthropic.com/v1/messages"
         const val ANTHROPIC_VERSION = "2023-06-01"
         const val DEFAULT_MODEL = "claude-opus-4-7"
+
+        // Retry 429 and 5xx with exponential backoff, honoring Retry-After.
+        private const val MAX_ATTEMPTS = 3
 
         private val JSON_MEDIA = "application/json; charset=utf-8".toMediaType()
 

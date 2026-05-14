@@ -1,5 +1,11 @@
 package com.mintwise.expense.ui
 
+import android.content.ActivityNotFoundException
+import android.content.Intent
+import android.speech.RecognizerIntent
+import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -23,6 +29,7 @@ import androidx.compose.material.icons.outlined.Bolt
 import androidx.compose.material.icons.outlined.CalendarToday
 import androidx.compose.material.icons.outlined.Flag
 import androidx.compose.material.icons.outlined.Lightbulb
+import androidx.compose.material.icons.outlined.Mic
 import androidx.compose.material.icons.outlined.Receipt
 import androidx.compose.material.icons.outlined.Send
 import androidx.compose.material.icons.outlined.TrendingDown
@@ -33,6 +40,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -49,8 +57,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import java.util.Locale
 import com.mintwise.expense.ui.theme.Expense
 import com.mintwise.expense.ui.theme.ExpenseSoft
 import com.mintwise.expense.ui.theme.Income
@@ -254,6 +264,37 @@ private fun AgentChatCard(
     onAsk: (String) -> Unit,
 ) {
     var text by remember { mutableStateOf("") }
+    val context = LocalContext.current
+    val voiceLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == android.app.Activity.RESULT_OK) {
+            val spoken = result.data
+                ?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+                ?.firstOrNull()
+                ?.trim()
+            if (!spoken.isNullOrBlank()) text = spoken
+        }
+    }
+    val onMicTap: () -> Unit = {
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(
+                RecognizerIntent.EXTRA_LANGUAGE_MODEL,
+                RecognizerIntent.LANGUAGE_MODEL_FREE_FORM,
+            )
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault())
+            putExtra(RecognizerIntent.EXTRA_PROMPT, "Speak to Agentic")
+        }
+        try {
+            voiceLauncher.launch(intent)
+        } catch (e: ActivityNotFoundException) {
+            Toast.makeText(
+                context,
+                "No speech recognizer available on this device.",
+                Toast.LENGTH_SHORT,
+            ).show()
+        }
+    }
     Card(
         colors = CardDefaults.cardColors(containerColor = Indigo),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
@@ -311,6 +352,16 @@ private fun AgentChatCard(
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
                     )
                     Spacer(Modifier.width(4.dp))
+                    IconButton(
+                        onClick = onMicTap,
+                        enabled = !oracle.pending,
+                    ) {
+                        Icon(
+                            Icons.Outlined.Mic,
+                            contentDescription = "Speak",
+                            tint = Indigo,
+                        )
+                    }
                     FilledIconButton(
                         onClick = {
                             if (text.isNotBlank() && !oracle.pending) {

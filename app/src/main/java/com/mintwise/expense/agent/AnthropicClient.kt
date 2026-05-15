@@ -32,11 +32,13 @@ import java.util.concurrent.TimeUnit
  * the APK small and avoids transitive desugaring issues that the Java SDK can
  * introduce on Android.
  */
-class AnthropicClient(
+open class AnthropicClient(
     private val httpClient: OkHttpClient = defaultClient,
     private val json: Json = jsonCodec,
+    // Override for tests pointing at MockWebServer.
+    private val baseUrl: String = MESSAGES_URL,
 ) {
-    suspend fun messages(
+    open suspend fun messages(
         token: String,
         model: String,
         maxTokens: Int,
@@ -55,7 +57,7 @@ class AnthropicClient(
 
         for (attempt in 0 until MAX_ATTEMPTS) {
             val request = Request.Builder()
-                .url(MESSAGES_URL)
+                .url(baseUrl)
                 .addHeader("anthropic-version", ANTHROPIC_VERSION)
                 .addHeader("content-type", "application/json")
                 .also { applyAuth(it, token) }

@@ -17,6 +17,18 @@ android {
         versionCode = 1
         versionName = "0.1.0"
         vectorDrawables { useSupportLibrary = true }
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // Forward CLAUDE_OAUTH_TOKEN from the gradle process to the on-device
+        // test runner so AnthropicLiveSmokeTest can decide whether to skip.
+        System.getenv("CLAUDE_OAUTH_TOKEN")?.takeIf { it.isNotBlank() }?.let {
+            testInstrumentationRunnerArguments["CLAUDE_OAUTH_TOKEN"] = it
+        }
+    }
+
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = false
+        }
     }
 
     signingConfigs {
@@ -89,4 +101,14 @@ dependencies {
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.kotlinx.coroutines.android)
     debugImplementation(libs.androidx.compose.ui.tooling)
+
+    testImplementation(libs.junit)
+    testImplementation(libs.okhttp.mockwebserver)
+    testImplementation(libs.kotlinx.coroutines.test)
+
+    androidTestImplementation(libs.androidx.test.junit)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.androidx.test.rules)
+    androidTestImplementation(libs.androidx.room.testing)
+    androidTestImplementation(libs.kotlinx.coroutines.test)
 }

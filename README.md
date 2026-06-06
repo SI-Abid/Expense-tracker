@@ -1,96 +1,145 @@
-# MINTwise — Eccentric Agentic Expense Tracker
+# Songsar — Household Ledger
 
-A monthly-budget + daily-expense tracker where every fund movement is recorded
-by an LLM agent. You type "blew 38 bucks on sushi" and the Oracle (Claude,
-calling tools in an agent loop) parses it, categorises it, persists it, updates
-your funds, and writes back a brief witty reply.
+A fast, **offline-first** household budget & expense app for a single operator —
+built to replace a handwritten paper ledger for managing a Bangladeshi family's
+monthly money. It preserves the real mental model: **pooled income, two budgets
+(personal vs household), fixed bills, two bazar modes, and labor paid by days** —
+and resolves everything to one trusted figure: **cash remaining**.
 
-## What's eccentric about it
+This is **not** a category-pie expense tracker. It's built around *income
+pooling + dual-wallet cash reconciliation*.
 
-- **No forms for the common case.** A single text box on the dashboard. Talk to
-  it like a person. The agent calls `record_transaction`, `set_budget`,
-  `list_transactions`, or `get_summary` as needed — sometimes multiple in one
-  turn (e.g. "$5 coffee and $12 lunch" → two tool calls).
-- **Agentic loop, not a one-shot prompt.** The server runs Claude in a
-  tool-use loop until `stop_reason == end_turn`. Multiple tool calls per turn
-  are normal.
-- **A persona, not a chatbot.** MINTwise is dry, bohemian, and brief. It will
-  notice when you've blown your dining budget without lecturing.
-- **Funds and category budgets are reconciled in SQLite.** No spreadsheets.
+> Local-first by design: all data lives on your device (IndexedDB), all logic
+> runs in the browser, and the app is a static bundle that needs **no backend**.
+> No accounts, no telemetry, no third-party network calls.
 
-## Stack
+---
 
-- Python 3, Flask, SQLite
-- Anthropic Python SDK (`anthropic`), model `claude-opus-4-7`
-- Vanilla HTML / CSS / JS — no frontend build step
-
-## Setup
+## Quick start
 
 ```bash
-pip install -r requirements.txt
-cp .env.example .env
-# Edit .env and add your Claude OAuth token (preferred) or API key.
-python app.py
+npm install
+npm run dev        # local development at http://localhost:5173
 ```
 
-Open <http://127.0.0.1:5000/>.
-
-### Auth
-
-The Oracle authenticates via the Anthropic SDK using **either**:
-
-1. `CLAUDE_CODE_OAUTH_TOKEN` — a Claude OAuth token (e.g. from `claude login`).
-   Preferred; passed via `Authorization: Bearer …`.
-2. `ANTHROPIC_API_KEY` — standard API key. Fallback.
-
-If neither is set, the dashboard still works — you'll see a warning, and you
-can use the manual budget form. The Oracle won't respond.
-
-## Usage examples
-
-Type these into the dashboard text box:
-
-| You say | What the agent does |
+| Command | What it does |
 | --- | --- |
-| `spent 12 on lunch` | calls `record_transaction(12, expense, Food, "lunch")` |
-| `blew 38 on sushi and 4 on a metro card` | two `record_transaction` calls |
-| `got paid 2500` | `record_transaction(2500, income, Income, "paycheck")` |
-| `set food budget to 400` | `set_budget("Food", 400)` |
-| `how much have I spent on food this month?` | `get_summary` then narrates |
-| `what's left in my budget?` | `get_summary` + commentary |
+| `npm run dev` | Vite dev server with hot reload |
+| `npm run test` | Run the unit + integration tests (Vitest) |
+| `npm run build` | Type-check and produce a static `dist/` bundle |
+| `npm run preview` | Serve the built `dist/` locally |
+| `npm run lint` | Type-check only (`tsc --noEmit`) |
 
-## File layout
+The first launch **seeds a sample June 2026 month** (pooled ৳75,000 income,
+fixed bills, shukna + kacha bazar with Bengali items, two maids, an oven
+repair). Wipe it any time from **Settings → Reset to sample data**.
+
+---
+
+## Concepts
+
+- **Two wallets, never merged.** Every amount is either **Cash** or **Online**.
+  The dashboard shows them as two separate balances — cash on hand is the hero
+  figure you physically reconcile.
+- **Two buckets.** **Household** (songsar) and **Our** (personal). The Our tab
+  is a fully isolated mirror — its money never enters the household balance.
+  Toggle between them in the header.
+- **Counted vs. obligation.** Bazar and Extras drain your wallet immediately.
+  Fixed bills and Labor only count once marked **Paid** — until then they show
+  under *“still to pay.”*
+- **Month-scoped.** Every record belongs to a month, so amount history comes for
+  free (last summer's electricity is just last July's record).
+
+### The math (see `src/domain/reconcile.ts`)
 
 ```
-app.py            Flask routes (dashboard, /ask, /budget, /transactions)
-agent.py          Claude tool-use loop + MINTwise system prompt
-database.py       SQLite schema + CRUD helpers
-templates/        Jinja templates (base, index, budget, transactions)
-static/           CSS + JS
-requirements.txt  flask, anthropic, python-dotenv
-.env.example      Auth + secret key template
+cashOnHand        = carryOverCash   + incomeCash   - paidCashOut
+onlineOnHand      = carryOverOnline + incomeOnline - paidOnlineOut
+unpaidObligations = Σ unpaid fixed + Σ unpaid labor pay
+projectedRemaining = cashOnHand + onlineOnHand - unpaidObligations
 ```
 
-## How the agent works
+Money is stored as **integer Taka** (no floats). The `src/domain/` layer is pure
+and fully unit-tested.
 
-`agent.converse(user_input)` builds a small context block (today's date,
-month-to-date totals, fund balance, number of budgets) and sends it to Claude
-along with four tools:
+---
 
-- `record_transaction(amount, kind, category, description, occurred_on?)`
-- `set_budget(category, amount, month?, note?)`
-- `list_transactions(month?, limit?)`
-- `get_summary(month?)`
+## Daily bazar — natural-language entry
 
-It then loops: call API → if `stop_reason == "tool_use"`, run the tools,
-append `tool_result` blocks, call again. Bounded at 6 iterations. Every turn
-is logged to `agent_log` so the dashboard can show recent Oracle whispers.
+The most frequent action. Type a trip in free text; it parses instantly and
+**offline**:
 
-## Caveats
+```
+কুমড়া ৭০, মুরগী ৬৭৫, ডিম ১৩৫, আলু ৬০, চিংড়ি ৫৫০
+```
 
-- Single-user. No auth on the Flask app — run locally only.
-- SQLite. Fine for personal use; not concurrent-write safe.
-- The Oracle infers categories. If it picks something you don't like, just say
-  "actually that was Entertainment not Food" and it'll re-record.
-- The model can in principle hallucinate amounts; the action log on the
-  dashboard shows exactly what was recorded so you can spot-check.
+- Items separated by **commas or new lines**.
+- Bengali (`০-৯`) **and** English digits accepted.
+- Separators between name and amount may be space, `-`, or `:`.
+- **Additive amounts** are summed: `মশলা ৫০+১৬+১৬` → 82.
+- Anything without a detectable amount becomes an **editable chip** you fix —
+  nothing is silently dropped.
+- A half-typed trip is **autosaved** and survives a reload.
+
+---
+
+## Month lifecycle
+
+- The app always opens on the **active** month; use the header arrows to view
+  past months (they remain editable).
+- **Settings → Close month** snapshots this month's closing cash/online into the
+  next month's carry-over, marks this month closed, and creates the next active
+  month with bills prefilled (unpaid, last amounts) and labor prefilled (rates
+  kept, 0 days).
+- Editing a *closed* month does **not** auto-propagate forward. Use **Recompute
+  carry-over** on the following month to refresh its opening balances.
+
+---
+
+## Install as a PWA (Android / desktop)
+
+1. `npm run build`, then serve `dist/` from any static host (e.g. nginx on a
+   private VPS), or run `npm run preview`.
+2. Open it in Chrome on your phone → menu → **Install app** / **Add to Home
+   screen**.
+3. After the first load it works **fully offline** — the app shell is precached
+   and all data is local.
+
+---
+
+## Backup & restore (your only safety net)
+
+Local-first means there is no cloud copy. Back up regularly:
+
+- **Settings → Export all data** downloads a JSON file with everything.
+- **Settings → Import data** restores from such a file (replaces current data;
+  malformed files are rejected before anything is touched).
+
+Export → wipe → import is verified to round-trip losslessly (`src/store/flow.test.ts`).
+
+---
+
+## Project structure
+
+```
+src/
+  db/         Dexie schema, seed (June 2026 sample), export/import
+  domain/     pure money math: reconciliation, rollover, parser, formatting  ← unit-tested
+  store/      Zustand app state + reconciliation selectors
+  components/ UI primitives, app shell, bazar entry form
+  screens/    Dashboard, Income, Fixed, Bazar, Labor, Extras, Settings
+  i18n/       English UI strings + BDT / date formatting
+scripts/      PWA icon generator (no deps)
+```
+
+## Tech
+
+React + TypeScript + Vite · Tailwind CSS · Dexie (IndexedDB) · Zustand ·
+`vite-plugin-pwa`. No backend. Bengali-capable on-device font stack
+(`Noto Sans Bengali`, `Hind Siliguri`, `system-ui`) — no web-font CDN, so there
+are zero third-party network calls.
+
+## Privacy
+
+Single user, no authentication, no analytics, no third-party calls in any core
+flow. Your financial data never leaves the device unless you export it yourself.

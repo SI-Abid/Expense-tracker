@@ -13,3 +13,9 @@ env/
 dist/
 build/
 .DS_Store
+
+# Node / Vite
+node_modules/
+dev-dist/
+*.tsbuildinfo
+npm-debug.log*

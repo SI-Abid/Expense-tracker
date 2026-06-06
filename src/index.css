@@ -1,0 +1,66 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply bg-paper text-ink font-sans antialiased;
+  /* respect notches on phones */
+  margin: 0;
+}
+
+/* Tabular figures so money columns line up. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* Hide number-input spinners for a cleaner ledger feel. */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+@layer components {
+  .card {
+    @apply bg-paper-card rounded-2xl shadow-card border border-paper-line;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition active:scale-[0.98] select-none;
+  }
+  .btn-primary {
+    @apply btn bg-household text-white shadow-sm hover:bg-household/90;
+  }
+  .btn-ghost {
+    @apply btn text-ink-soft hover:bg-paper-line/60;
+  }
+  .btn-danger {
+    @apply btn text-danger hover:bg-red-50;
+  }
+  .field {
+    @apply w-full rounded-xl border border-paper-line bg-white px-3.5 py-2.5 text-base outline-none focus:border-household focus:ring-2 focus:ring-household/20;
+  }
+  .label {
+    @apply block text-xs font-semibold uppercase tracking-wide text-ink-faint mb-1;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium;
+  }
+  /* tap targets: minimum 44px for thumbs */
+  .tap {
+    @apply min-h-[44px];
+  }
+}

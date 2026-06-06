@@ -3,7 +3,12 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import { VitePWA } from "vite-plugin-pwa";
 
+// Base path: "/" for local dev/preview, "/<repo>/" for GitHub Pages project
+// sites. The Pages workflow sets VITE_BASE from the repository name.
+const base = process.env.VITE_BASE ?? "/";
+
 export default defineConfig({
+  base,
   plugins: [
     react(),
     VitePWA({

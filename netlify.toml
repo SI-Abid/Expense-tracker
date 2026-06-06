@@ -1,0 +1,29 @@
+# Netlify deploy config for Songsar (static Vite SPA).
+# Works with a PRIVATE GitHub repo on Netlify's free tier.
+
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "20"
+
+# SPA fallback. (The app has no client-side routing, but this keeps any deep
+# link resolving to the app shell. Existing files — sw.js, manifest, assets —
+# always take precedence over this rule, so PWA files serve correctly.)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
+
+# Always revalidate the service worker and HTML shell so app updates land
+# immediately; hashed assets in /assets are safely cached forever by default.
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/index.html"
+  [headers.values]
+    Cache-Control = "no-cache"
